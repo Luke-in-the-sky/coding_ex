@@ -23,31 +23,16 @@
 #  - European-type options
 #  - strategy: only naked call/put
 #  - we are buying the option (i.e. using 'Bid' and not 'Ask')
-#  
-# To add:
-#  - [] Monte Carlo should look at historic data to measure the historic returns of the underlying
-#  - [] historical data: should automatically download fresh copy (if older than a week)
-#  - [] option chain: after downloading, if all Bids are zero (i.e. not trading hours) ask to keep older data (if available)
-#  - [x] implement possibility to *sell* the option (now it's only considering the buy side)
-#  - [x] expected return = median(returns)
-#  
-#  
-# Probelms:
-#   - [x] Check it pulls reat time data (when US stock exchange is open)
-#   - [] I don't like the equation for the Monte Carlo process. Why should we subtract the sigma term from \mu?
 
 
-
-import os.path
 import math
 import pandas
-from pandas.io.data import SymbolWarning, RemoteDataError, Options
-
 import numpy 
 import datetime
 from scipy.stats import norm
+import matplotlib.pyplot as plt
+#from ggplot import *
 
-my_local_CSV_file = 'C:\\Users\\Luke-Lenovo\\Documents\\GitHub\\coding_ex\\Python - Options strategy\\SPY_YahooFinance.csv'
 
 def side_by_side(*objs, **kwds):
     from pandas.core.common import adjoin
@@ -56,14 +41,17 @@ def side_by_side(*objs, **kwds):
     print (adjoin(space, *reprs))
     
 
+my_local_CSV_file = 'C:\\Users\\Luke-Lenovo\\Documents\\GitHub\\coding_ex\\Python - Options strategy\\SPY_YahooFinance.csv'
 trading_days_in_a_year = 252
-
+risk_free_int_rate = 0.01
+days_in_history_to_consider = 40 # for computing historical volatility and average returns (Calendar days)
+days_in_future_to_consider  = 40 # to select a (default) expiration date
+num_of_paths_to_simulate    = 1000 # for the Monte Carlo simulation
+option_chain_csv_file = ''
 
 # # Load historical data
 # 
 # Compute historical volatility and average returns
-
-
 
 def load_from_csv(filename = 'SPYopenDayly.csv', verbose=0):
     """ 
@@ -79,11 +67,24 @@ def load_from_csv(filename = 'SPYopenDayly.csv', verbose=0):
         print(data.keys())
     
     return data
+    
+def download_historical_data(ticker, start_date):
+    '''
+    Downloads historical data from Yahoo!
+    Saves a copy to file and returns a DataFrame with the info
+    '''
+    #start = datetime.datetime(2014, 1, 1)
+    end = datetime.date.today()
+    f = pandas.io.data.DataReader("SPY", 'yahoo', start_date, end)
+    f = f.reset_index()
+    out = f.sort('Date', ascending=False)[['Date', 'Close']]
+    
+    filename = ticker + '_' + str(start_date) + '-' + str(end)  + '.csv'
+    out.to_csv(filename)
+    return out
 
 
-
-
-def compute_hist_vol(full_data, days_in_history_to_consider=40):
+def compute_hist_vol(full_data, days_to_consider=days_in_history_to_consider):
     """ 
     Computing historical volatility from hystorical values 
     (CLOSE-to-CLOSE, no dividend, annualized)
@@ -112,41 +113,54 @@ def compute_hist_vol(full_data, days_in_history_to_consider=40):
 
 # ## Retrieve option chain from Yahoo Finance
 
+from pandas.io.data import SymbolWarning, RemoteDataError, Options
+import os.path
+
 def retrieve_option_chain(ticker = 'SPY'):
     filename = str(datetime.date.today()) + '_' + ticker + 'optionChain.csv'
-    spy_data = pandas.DataFrame()
-    if not (os.path.isfile(filename)):
-        print (" --> Today's option chain not on system: \
-        downloading it now... ")
+    # Check if you have it on file. If not, download the data
+    spy_data = retrieve_option_chain_from_file(filename)
+    if spy_data.empty:
+        print (" --> Today's option chain not on system:         downloading it now... ")
         try:
             spy_options = Options(ticker, 'yahoo')
             spy_data = spy_options.get_all_data()
             spy_data = spy_data.reset_index()
             spy_data = spy_data.set_index('Symbol')
             spy_data.to_csv(filename, date_format='%Y-%m-%d')
+            # Load the data from the CSV you just wrote 
+            # (this ensures that re-shaping is always done
+            #    by retrieve_option_chain_from_file() )
+            spy_data = retrieve_option_chain_from_file(filename)
         except:
-            print ('---> Error with retrieving data. Please double-check the ticker symbol')
+            print ('Error with retrieving data. Please double-check the ticker symbol')
             return spy_data
-
-    spy_data = pandas.read_csv(filename)
-    spy_data = spy_data.set_index('Symbol')
     
     return spy_data 
 
+def retrieve_option_chain_from_file(filename): 
+    global option_chain_csv_file
+    spy_data = pandas.DataFrame() 
+    if (os.path.isfile(filename)):
+        spy_data = pandas.read_csv(filename)
+        spy_data = spy_data.set_index('Symbol')
+        option_chain_csv_file = filename
+    else:
+        print('--> File not found: %s' % filename)
+    return spy_data
 # TODO: delete old Option Chains
 #os.remove()
 
 
 
 
+
 # ## Find an interesting expiry date
-
-
 
 import datetime
 
 def next_available_expiration_date(underlyingDataFrame,
-                                   how_many_days_from_now = 40):
+                                   how_many_days_from_now = days_in_future_to_consider):
     '''
     Looks up the given pandas.io.data.Options object and returns 
     the next expiration date (string)
@@ -180,12 +194,10 @@ def next_available_expiration_date(underlyingDataFrame,
 # 
 # for each k between 1 and M. Here each $\varepsilon_i$ is a draw from a standard normal distribution
 
-
-
 def evolve_underlying_price(underlying_price = 200, 
                             averageUnderlyingReturns = .0907,
                             volatility = .2, days_to_expiration = 7, 
-                            nTrials = 1000):
+                            nTrials = num_of_paths_to_simulate):
     '''
     Monte Carlo simulation of stock price evolution.
     Assuming a lognormal distribution of prices, computes 
@@ -211,8 +223,6 @@ def evolve_underlying_price(underlying_price = 200,
 
 
 # #### Compute profit/loss at expiration
-
-
 
 def profit_at_expiration_for_single_option(underlyingPriceAtExpiration=100, 
                                            strike=90, optionType='call', 
@@ -244,8 +254,6 @@ def profit_at_expiration_for_single_option(underlyingPriceAtExpiration=100,
         print(' --> profit_at_expiration_for_single_option():         do not recognize option type')
         output = None
     return output
-
-
 
 
 
@@ -283,8 +291,6 @@ def strategy_assessment(strike, optionType, price, underlPathsDataFrame,
 
 # ### Compute POP for all (interesting) entries in the option chain
 
-
-
 def strategy_buy_naked_callput(underlOptionChain, expirationDate, underlSimulPaths):
     expiry = expirationDate
     selection = underlOptionChain[(underlOptionChain['Expiry']==str(expiry)) & 
@@ -293,7 +299,7 @@ def strategy_buy_naked_callput(underlOptionChain, expirationDate, underlSimulPat
     pops = pandas.DataFrame()
     if selection.empty:
         print (' --> Dataframe empty!')
-        print ('     Nothing found for', expiry, 'and Ask>0')
+        print ('     Nothing found for', expiry, 'and Bid>0')
     else:
         selection = selection.reset_index()
 
@@ -306,8 +312,6 @@ def strategy_buy_naked_callput(underlOptionChain, expirationDate, underlSimulPat
         pops.columns = ['Symbol','Strike','Type', 'Price', 'pop', 'mReturns']
     return pops
     
-
-
 
 
 def strategy_sell_naked_callput(underlOptionChain, expirationDate, underlSimulPaths):
@@ -334,3 +338,21 @@ def strategy_sell_naked_callput(underlOptionChain, expirationDate, underlSimulPa
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# 
