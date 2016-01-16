@@ -205,10 +205,7 @@ class Example(QtGui.QMainWindow):
         self.statusBar().showMessage('Simulating underlying evolution (Monte Carlo)..')
         self.SimulPaths  = mylib.evolve_underlying_price(underlying_price = price_now, 
                         days_to_expiration=days_to_exp.days, nTrials=mylib.num_of_paths_to_simulate, 
-                        averageUnderlyingReturns = avAnnualReturns, volatility = hist_vol) 
-                        
-        print(price_now, days_to_exp.days,mylib.num_of_paths_to_simulate, 
-                        avAnnualReturns,hist_vol) 
+                        averageUnderlyingReturns = avAnnualReturns, volatility = hist_vol)  
 
         # Plot it
         self.plot_simulated_paths()
