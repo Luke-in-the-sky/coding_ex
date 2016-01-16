@@ -46,7 +46,7 @@ trading_days_in_a_year = 252
 risk_free_int_rate = 0.01
 days_in_history_to_consider = 40 # for computing historical volatility and average returns (Calendar days)
 days_in_future_to_consider  = 40 # to select a (default) expiration date
-num_of_paths_to_simulate    = 1000 # for the Monte Carlo simulation
+num_of_paths_to_simulate    = 100 # for the Monte Carlo simulation
 option_chain_csv_file = ''
 
 # # Load historical data
@@ -127,7 +127,8 @@ def retrieve_option_chain(ticker = 'SPY'):
         spy_options = Options(ticker, 'yahoo')
         spy_data = spy_options.get_all_data()
         spy_data = spy_data.reset_index()
-        spy_data = spy_data.set_index('Symbol')
+        if 'Symbol' in spy_data.keys():
+            spy_data = spy_data.set_index('Symbol') 
         spy_data.to_csv(filename, date_format='%Y-%m-%d')
         # Load the data from the CSV you just wrote 
         # (this ensures that re-shaping is always done
@@ -144,7 +145,8 @@ def retrieve_option_chain_from_file(filename):
     spy_data = pandas.DataFrame() 
     if (os.path.isfile(filename)):
         spy_data = pandas.read_csv(filename)
-        spy_data = spy_data.set_index('Symbol')
+        if 'Symbol' in spy_data.keys():
+            spy_data = spy_data.set_index('Symbol') 
         option_chain_csv_file = filename
     else:
         print('--> File not found: %s' % filename)

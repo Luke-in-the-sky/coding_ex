@@ -183,8 +183,14 @@ class Example(QtGui.QMainWindow):
         self.check_ready_to_munch_numbers()
         
     def simulatePaths(self):
+        '''
+        Call functions from library to run simulation for underlying's price evolution.
+        This is a Monte Carlo simulation from today to a determined date in the future (the
+        expiration date of the option). It runs mylib.num_of_paths_to_simulate runs of the 
+        Monte Carlo process.
+        '''
         price_now       = self.spy_data['Underlying_Price'].iloc[0]
-        self.expiration = mylib.next_available_expiration_date(self.spy_data, 40)
+        self.expiration = mylib.next_available_expiration_date(self.spy_data, mylib.days_in_future_to_consider)
         days_to_exp     = self.expiration - datetime.date.today()
         history_start_date = datetime.date.today() - datetime.timedelta(600)
         try:
@@ -198,29 +204,53 @@ class Example(QtGui.QMainWindow):
         
         self.statusBar().showMessage('Simulating underlying evolution (Monte Carlo)..')
         self.SimulPaths  = mylib.evolve_underlying_price(underlying_price = price_now, 
-                        days_to_expiration=days_to_exp.days, nTrials=500, 
+                        days_to_expiration=days_to_exp.days, nTrials=mylib.num_of_paths_to_simulate, 
                         averageUnderlyingReturns = avAnnualReturns, volatility = hist_vol) 
+                        
+        print(price_now, days_to_exp.days,mylib.num_of_paths_to_simulate, 
+                        avAnnualReturns,hist_vol) 
+
         # Plot it
         self.plot_simulated_paths()
     
     
     def check_ready_to_munch_numbers(self):
+        '''
+        Check for all the things that might go wrong before actually starting to 
+        assess an option strategy
+        '''
         self.lbl_1.setText(mylib.option_chain_csv_file)
-        all_fine = True
+        
+        # Check you have option data loaded in memory
         if self.spy_data.empty:
-            all_fine = False
             self.error_no_data_loaded()
             return
+        
+        # Check data has all the columns you will need
+        columns_needed = ['Expiry','Underlying_Price', 'Symbol', 'Strike', 'Bid', 'Ask', 'Type'] 
+        temp = self.spy_data.reset_index()
+        for name in columns_needed:
+            if name not in temp.keys(): 
+                print('---> Column name "%s" not in the options data' % name)
+                QtGui.QMessageBox.warning(self, 'Bad data loaded',
+                'Something went wrong in loading the option-chain data (ups..) \
+                \n\nTry downloading it again or loading the data from file (File->Load option chain)',
+                buttons = QtGui.QMessageBox.Ok)
+                self.spy_data = pd.DataFrame() #reset the stored info
+                return        
+        
+        # Check data is from US stock exchange opening hours
         sumBid = (self.spy_data['Bid'] **2).sum()
         sumAsk = (self.spy_data['Ask'] **2).sum()
         if sumBid == 0 and sumAsk == 0:
-            all_fine = False
             QtGui.QMessageBox.information(self, 'Message',
                 'All Bid and Ask prices are set to zero in this option chain.\
                 \nPerhaps the data was downloaded outside of the US stock exchange trading hours.\
                 \nTry loading option chains from the File menu', 
                 QtGui.QMessageBox.Ok)     
             return
+            
+        # Check you have simulated underlying's evolution
         if self.SimulPaths.empty:
             self.simulatePaths()
         
@@ -228,6 +258,10 @@ class Example(QtGui.QMainWindow):
   
 
     def munchTheNumbers(self):
+        '''
+        Run the selected strategy (from the ComboBox) over the simulated paths
+        and collect the returns
+        '''
         # Check you have the data you need
         if (self.spy_data.empty or self.SimulPaths.empty or self.expiration==None):
             self.error_no_data_loaded()
@@ -276,6 +310,9 @@ class Example(QtGui.QMainWindow):
             QtGui.QMessageBox.Ok)        
             
     def plot_simulated_paths(self):
+        '''
+        Plot the paths simulted in the Monte Carlo
+        '''
         self.statusBar().showMessage('Plotting Simulated paths..')
         self.ax_sim = self.figure.add_subplot(121) # create an axis
         plt.cla()
@@ -292,6 +329,9 @@ class Example(QtGui.QMainWindow):
                 
     
     def plot(self):
+        '''
+        Plot the results of the strategy assessment
+        '''
         self.statusBar().showMessage('Plotting results..')
         self.ax = self.figure.add_subplot(122) # create an axis
         plt.cla() #clears an axis, i.e. the currently active axis in the current figure. It leaves the other axes untouched.
