@@ -290,69 +290,25 @@ def strategy_assessment(strike, optionType, price, underlPathsDataFrame,
 
 
 # ### Compute POP for all (interesting) entries in the option chain
-
-def strategy_buy_naked_callput(underlOptionChain, expirationDate, underlSimulPaths):
-    expiry = expirationDate
-    selection = underlOptionChain[(underlOptionChain['Expiry']==str(expiry)) & 
-                                      (underlOptionChain['Bid']>0)][['Strike', 'Type',
-                                                                     'Bid', 'Ask', 'IV']]
-    pops = pandas.DataFrame()
-    if selection.empty:
-        print (' --> Dataframe empty!')
-        print ('     Nothing found for', expiry, 'and Bid>0')
-    else:
-        selection = selection.reset_index()
-
-        for i in range(len(selection)):
-            sym, s, t, b, a, iv = selection.loc[i]
-            price = b
-            pop, returns = strategy_assessment(s,t,price, underlSimulPaths, True)
-            median_returns = numpy.median(numpy.asarray(returns))
-            pops = pops.append(pandas.Series([sym, s, t, price, pop, median_returns]), ignore_index=True)
-        pops.columns = ['Symbol','Strike','Type', 'Price', 'pop', 'mReturns']
-    return pops
     
-
-
-def strategy_sell_naked_callput(underlOptionChain, expirationDate, underlSimulPaths):
+def strategy_naked_option(underlOptionChain, expirationDate, underlSimulPaths, bidOrAsk='Bid', type='call'):
     expiry = expirationDate
     selection = underlOptionChain[(underlOptionChain['Expiry']==str(expiry)) & 
-                                      (underlOptionChain['Ask']>0)][['Strike', 'Type',
-                                                                     'Bid', 'Ask', 'IV']]
+                                      (underlOptionChain[bidOrAsk]>0) &
+                                      (underlOptionChain['Type'] == type)][[
+                                      'Strike', 'Type', 'Bid', 'Ask']]
     pops = pandas.DataFrame()
     if selection.empty:
         print (' --> Dataframe empty!')
-        print ('     Nothing found for', expiry, 'and Ask>0')
+        print ('     Nothing found for', type, 'and expiration', expiry, 'and ', bidOrAsk,'>0')
     else:
         selection = selection.reset_index()
+
         for i in range(len(selection)):
-            sym, s, t, b, a, iv = selection.loc[i]
-            price = -a
+            sym, s, t, b, a = selection.loc[i]
+            price = b if bidOrAsk == 'Bid' else -1*a
             pop, returns = strategy_assessment(s,t,price, underlSimulPaths, True)
             median_returns = numpy.median(numpy.asarray(returns))
             pops = pops.append(pandas.Series([sym, s, t, price, pop, median_returns]), ignore_index=True)
         pops.columns = ['Symbol','Strike','Type', 'Price', 'pop', 'mReturns']
     return pops
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# 

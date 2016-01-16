@@ -72,14 +72,23 @@ class Example(QtGui.QMainWindow):
         # Strategy [Combo box]
         self.lbl2 = QtGui.QLabel("Strategy", self.central)
         self.combo = QtGui.QComboBox(self.central)
-        self.combo.addItem("Buy naked call/put")
-        self.combo.addItem("Sell naked call/put")
+        self.combo.addItem("Buy naked call")
+        self.combo.addItem("Buy naked put")
+        self.combo.addItem("Sell naked call")
+        self.combo.addItem("Sell naked put")
         self.combo.activated[str].connect(self.check_ready_to_munch_numbers) 
         
         # Canvas
         self.figure = plt.figure()
         self.canvas = FigureCanvas(self.figure)
         self.toolbar = NavigationToolbar(self.canvas, self)
+        
+        # Selected Option Chain
+        self.lb3_0 = QtGui.QLabel('Selected Option', self.central)
+        self.lb3_1 = QtGui.QTextEdit('This field will display info on your chosen option:')
+        self.lb3_1.append('  1. Enter ticker symbol and hit the "Get Data" button')
+        self.lb3_1.append('  2. Select a strategy')
+        self.lb3_1.append('  3. Click on a point in the graph to find option\' details')
         
         # Layout
         grid = QtGui.QGridLayout()
@@ -92,11 +101,12 @@ class Example(QtGui.QMainWindow):
         grid.addWidget(self.lbl2    , 3, 0)
         grid.addWidget(self.combo   , 3, 1)
         grid.addWidget(self.canvas  , 4, 1)
-        #grid.addWidget(self.button  , 3, 2)
-        grid.addWidget(self.toolbar, 5, 1)
+        grid.addWidget(self.toolbar , 5, 1)
+        grid.addWidget(self.lb3_0   , 6, 0)
+        grid.addWidget(self.lb3_1   , 6, 1) 
         
         self.central.setLayout(grid)
-        self.setGeometry(300, 200, 600, 500)
+        self.setGeometry(300, 50, 800, 500)
         self.setWindowTitle('Input dialog')
         self.show()
         self.statusBar().showMessage('Ready')
@@ -116,14 +126,25 @@ class Example(QtGui.QMainWindow):
         self.statusBar().showMessage('Loading Option data.. (this might take a minute or two)')
         self.spy_data   = mylib.retrieve_option_chain(self.tick_str)
         if self.spy_data.empty:
-            reply = QtGui.QMessageBox.warning(self, 'Message',
+            QtGui.QMessageBox.warning(self, 'Message',
             'Error while donwloading option data. \nPlease double-check the ticker symbol is correct', 
             buttons = QtGui.QMessageBox.Ok)
             return
         self.check_ready_to_munch_numbers()
         
+    def ask_to_reset_sim_paths(self):
+        reply = QtGui.QMessageBox.question(self, 'Message',
+            'Should I reset the simulated paths?', 
+            QtGui.QMessageBox.Yes | QtGui.QMessageBox.No, QtGui.QMessageBox.Yes)
+        if reply == QtGui.QMessageBox.Yes:
+            self.SimulPaths = pd.DataFrame()  # Reset the simulated paths
+            if hasattr(self, 'ax_sim'):
+                self.ax_sim.cla()
+                self.canvas.draw()      # refresh canvas
+        
     def load_option_chain_file(self):
         self.statusBar().showMessage('Loading Option Chain file')
+        self.ask_to_reset_sim_paths()
         csv_filename = QtGui.QFileDialog.getOpenFileName(self, 'Open csv file')
         self.spy_data = mylib.retrieve_option_chain_from_file(csv_filename)
         self.check_ready_to_munch_numbers()
@@ -145,7 +166,9 @@ class Example(QtGui.QMainWindow):
         self.statusBar().showMessage('Simulating underlying evolution (Monte Carlo)..')
         self.SimulPaths  = mylib.evolve_underlying_price(underlying_price = price_now, 
                         days_to_expiration=days_to_exp.days, nTrials=500, 
-                        averageUnderlyingReturns = avAnnualReturns, volatility = hist_vol)     
+                        averageUnderlyingReturns = avAnnualReturns, volatility = hist_vol) 
+        # Plot it
+        self.plot_simulated_paths()
     
     
     def check_ready_to_munch_numbers(self):
@@ -187,8 +210,23 @@ class Example(QtGui.QMainWindow):
         elif strategy_name == "Sell naked call/put":
             pops = mylib.strategy_sell_naked_callput(underlOptionChain=self.spy_data, 
                         expirationDate=self.expiration, underlSimulPaths=self.SimulPaths)
+        elif strategy_name == 'Buy naked call':
+            pops = mylib.strategy_naked_option(underlOptionChain = self.spy_data, 
+                   expirationDate = self.expiration, underlSimulPaths=self.SimulPaths,
+                   bidOrAsk='Bid', type='call')
+        elif strategy_name == 'Buy naked put':
+            pops = mylib.strategy_naked_option(underlOptionChain = self.spy_data, 
+                   expirationDate = self.expiration, underlSimulPaths=self.SimulPaths,
+                   bidOrAsk='Bid', type='put')
+        elif strategy_name == 'Sell naked call':
+            pops = mylib.strategy_naked_option(underlOptionChain = self.spy_data, 
+                   expirationDate = self.expiration, underlSimulPaths=self.SimulPaths,
+                   bidOrAsk='Ask', type='call')
+        elif strategy_name == 'Sell naked put':
+            pops = mylib.strategy_naked_option(underlOptionChain = self.spy_data, 
+                   expirationDate = self.expiration, underlSimulPaths=self.SimulPaths,
+                   bidOrAsk='Ask', type='put')
         self.probabilitiesOfProfit = pops
-        
         self.plot()
             
     def error_no_data_loaded(self):
@@ -203,27 +241,56 @@ class Example(QtGui.QMainWindow):
         QtGui.QMessageBox.warning(self, 'No historical data',
             'No historical data found. \nPlease check you have it at:\n %s' % mylib.my_local_CSV_file, 
             QtGui.QMessageBox.Ok)        
-        
+            
+    def plot_simulated_paths(self):
+        self.statusBar().showMessage('Plotting Simulated paths..')
+        self.ax_sim = self.figure.add_subplot(121) # create an axis
+        plt.cla()
+        if self.SimulPaths.empty:
+            print('No simulated paths to be plotted')
+            return
+        self.ax_sim.set_title('Prices paths')
+        self.ax_sim.set_ylabel('Underl. price')
+        self.ax_sim.set_xlabel('Days')
+        self.SimulPaths.plot(ax = self.ax_sim)
+        self.ax_sim.legend_ = None
+        self.figure.tight_layout()
+        self.canvas.draw()      # refresh canvas
+                
+    
     def plot(self):
         self.statusBar().showMessage('Plotting results..')
-        self.ax = self.figure.add_subplot(111) # create an axis
+        self.ax = self.figure.add_subplot(122) # create an axis
         plt.cla() #clears an axis, i.e. the currently active axis in the current figure. It leaves the other axes untouched.
         if self.probabilitiesOfProfit.empty:
             QtGui.QMessageBox.information(self, 'Message',
                 'Nothing to be plotted.', 
                 QtGui.QMessageBox.Ok) 
         else:
-            cPops = self.probabilitiesOfProfit[self.probabilitiesOfProfit['Type'] == 'call']
-            cPops.plot(ax = self.ax, kind = 'scatter', y='mReturns', x='pop', color='red', label='call')
-            cPops = self.probabilitiesOfProfit[self.probabilitiesOfProfit['Type'] == 'put']
-            cPops.plot(ax = self.ax, kind = 'scatter', y='mReturns', x='pop', color='blue', label='put')
-            plt.legend()
-            plt.ylabel('Median returns')
-            plt.xlabel('Probability of Profit')
+            Pops = self.probabilitiesOfProfit
+            Pops.plot(ax = self.ax, kind = 'scatter', y='mReturns', x='pop', color='blue', picker=True)
+            
+            def pick_option_from_plot(event):
+                ind = event.ind
+                data = self.probabilitiesOfProfit
+                clicked_pop = (np.take(Pops['pop'], ind)).iloc[0]
+                clicked_ret = (np.take(Pops['mReturns'], ind)).iloc[0]
+                selected_option = Pops[(Pops['pop'] == clicked_pop) & (Pops['mReturns'] == clicked_ret) ]
+                print(selected_option)
+                sym, strike, type, price, pop, mRet = selected_option.iloc[0]
+                selected_option_str = 'SYM: %s \nPrice:    %.2f $ \nPoP:     %.2f %% \nMedian Returns: %.2f $' % (
+                    sym, price, pop*100, mRet)
+                self.lb3_1.setText(selected_option_str)
+            
+            self.ax.set_title('Strategy Assesment')
+            self.ax.set_ylabel('Median returns')
+            self.ax.set_xlabel('Probability of Profit')
             self.figure.tight_layout()
             self.canvas.draw()      # refresh canvas
+            self.figure.canvas.mpl_connect('pick_event', pick_option_from_plot)
             self.statusBar().showMessage('Done.')
-        
+
+
 def main():    
     app = QtGui.QApplication(sys.argv)
     ex = Example()
