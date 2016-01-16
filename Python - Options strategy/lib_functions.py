@@ -116,25 +116,26 @@ def compute_hist_vol(full_data, days_to_consider=days_in_history_to_consider):
 from pandas.io.data import SymbolWarning, RemoteDataError, Options
 import os.path
 
-def retrieve_option_chain(ticker = 'SPY'):
+def filename_from_ticker_sym(ticker = 'SPY'):
     filename = str(datetime.date.today()) + '_' + ticker + 'optionChain.csv'
-    # Check if you have it on file. If not, download the data
-    spy_data = retrieve_option_chain_from_file(filename)
-    if spy_data.empty:
-        print (" --> Today's option chain not on system:         downloading it now... ")
-        try:
-            spy_options = Options(ticker, 'yahoo')
-            spy_data = spy_options.get_all_data()
-            spy_data = spy_data.reset_index()
-            spy_data = spy_data.set_index('Symbol')
-            spy_data.to_csv(filename, date_format='%Y-%m-%d')
-            # Load the data from the CSV you just wrote 
-            # (this ensures that re-shaping is always done
-            #    by retrieve_option_chain_from_file() )
-            spy_data = retrieve_option_chain_from_file(filename)
-        except:
-            print ('Error with retrieving data. Please double-check the ticker symbol')
-            return spy_data
+    return filename
+
+def retrieve_option_chain(ticker = 'SPY'):
+    spy_data = pandas.DataFrame()
+    print (" --> Today's option chain not on system:         downloading it now... ")
+    try:
+        spy_options = Options(ticker, 'yahoo')
+        spy_data = spy_options.get_all_data()
+        spy_data = spy_data.reset_index()
+        spy_data = spy_data.set_index('Symbol')
+        spy_data.to_csv(filename, date_format='%Y-%m-%d')
+        # Load the data from the CSV you just wrote 
+        # (this ensures that re-shaping is always done
+        #    by retrieve_option_chain_from_file() )
+        spy_data = retrieve_option_chain_from_file(filename)
+    except:
+        print ('Error with retrieving data. Please double-check the ticker symbol')
+        return spy_data
     
     return spy_data 
 

@@ -63,7 +63,7 @@ class Example(QtGui.QMainWindow):
         self.le = QtGui.QLineEdit(self.central)
         self.le.setText('SPY')
         self.btn = QtGui.QPushButton('Get data', self.central)
-        self.btn.clicked.connect(self.getTickerSym)
+        self.btn.clicked.connect(self.get_data)
         
         # Selected Option Chain
         self.lbl_0 = QtGui.QLabel('Selected Chain', self.central)
@@ -112,27 +112,45 @@ class Example(QtGui.QMainWindow):
         self.statusBar().showMessage('Ready')
     
     def aboutMessage(self):
+        '''
+        Message to be displayed for the Help->About
+        '''
         QtGui.QMessageBox.information(self, 'Message',
             "Option and underlying's data downloaded from Yahoo!\n\n\
             App developped by Luca: suggestions are most welcomed\n\
             at luca.mail.inbox@gmail.com", 
             buttons = QtGui.QMessageBox.Ok)
     
-    def getTickerSym(self):        
-        self.tick_str = self.le.text()
-        self.get_data()
-    
     def get_data(self):
+        '''
+        Load option-chain data: if you have it on file use that, 
+        otherwise download it from the web
+        '''
         self.statusBar().showMessage('Loading Option data.. (this might take a minute or two)')
-        self.spy_data   = mylib.retrieve_option_chain(self.tick_str)
+        self.tick_str = self.le.text()
+        
+        # Check if you have it on file
+        filenm = mylib.filename_from_ticker_sym(self.tick_str)
+        self.spy_data = mylib.retrieve_option_chain_from_file(filenm)
+        
+        # Not on file? well, download it
         if self.spy_data.empty:
-            QtGui.QMessageBox.warning(self, 'Message',
-            'Error while donwloading option data. \nPlease double-check the ticker symbol is correct', 
-            buttons = QtGui.QMessageBox.Ok)
-            return
+            self.statusBar().showMessage('Downloading Option data from the web.. (this might take a few minutes)')
+            self.spy_data   = mylib.retrieve_option_chain(self.tick_str)
+            if self.spy_data.empty:
+                QtGui.QMessageBox.warning(self, 'Message',
+                'Error while downloading option data. \nPlease double-check the ticker symbol is correct', 
+                buttons = QtGui.QMessageBox.Ok)
+                return
+        
+        # Go to the next step
         self.check_ready_to_munch_numbers()
         
     def ask_to_reset_sim_paths(self):
+        '''
+        Ask whether we want to clear the simulated paths
+        and run the Monte Carlo simulation agin to compute new paths
+        '''
         reply = QtGui.QMessageBox.question(self, 'Message',
             'Should I reset the simulated paths?', 
             QtGui.QMessageBox.Yes | QtGui.QMessageBox.No, QtGui.QMessageBox.Yes)
@@ -143,10 +161,25 @@ class Example(QtGui.QMainWindow):
                 self.canvas.draw()      # refresh canvas
         
     def load_option_chain_file(self):
+        '''
+        Load option-chain data from file.
+        This serves the case of not being able to download a fresh copy
+        or the case of the US stock exchange being closed right now
+        '''
         self.statusBar().showMessage('Loading Option Chain file')
-        self.ask_to_reset_sim_paths()
+        if not self.SimulPaths.empty:
+            self.ask_to_reset_sim_paths()
         csv_filename = QtGui.QFileDialog.getOpenFileName(self, 'Open csv file')
-        self.spy_data = mylib.retrieve_option_chain_from_file(csv_filename)
+        try:
+            self.spy_data = mylib.retrieve_option_chain_from_file(csv_filename)
+        except pd.parser.CParserError:
+            self.spy_data = pd.DataFrame()
+            QtGui.QMessageBox.warning(self, 'Impossible to load file',
+            'Not able to load the selected file. \
+            \nFile should be one automatically created from a previous run of this App\
+            \n\n(It should look something like "2016-01-16_SPYoptionChain.csv")', buttons = QtGui.QMessageBox.Ok)
+        
+        # Go to next step
         self.check_ready_to_munch_numbers()
         
     def simulatePaths(self):
