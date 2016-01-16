@@ -41,9 +41,9 @@ def side_by_side(*objs, **kwds):
     print (adjoin(space, *reprs))
     
 
-my_local_CSV_file = 'C:\\Users\\Luke-Lenovo\\Documents\\GitHub\\coding_ex\\Python - Options strategy\\SPY_YahooFinance.csv'
+#my_local_CSV_file = 'C:\\Users\\Luke-Lenovo\\Documents\\GitHub\\coding_ex\\Python - Options strategy\\SPY_YahooFinance.csv'
 trading_days_in_a_year = 252
-risk_free_int_rate = 0.01
+#risk_free_int_rate = 0.01
 days_in_history_to_consider = 40 # for computing historical volatility and average returns (Calendar days)
 days_in_future_to_consider  = 40 # to select a (default) expiration date
 num_of_paths_to_simulate    = 100 # for the Monte Carlo simulation

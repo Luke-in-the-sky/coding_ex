@@ -36,16 +36,20 @@ class Example(QtGui.QMainWindow):
     def initUI(self):
     
         # Menu - File
+        openChainFile = QtGui.QAction('Load option-chain', self)
+        openChainFile.triggered.connect(self.load_option_chain_file)
+        settings = QtGui.QAction('Settings', self)
+        settings.triggered.connect(self.set_settings)
         exitAction = QtGui.QAction('Exit', self) 
         exitAction.setShortcut('Ctrl+Q')
         exitAction.setStatusTip('Exit application')
         exitAction.triggered.connect(QtGui.qApp.quit)
-        openChainFile = QtGui.QAction('Load option-chain', self)
-        openChainFile.triggered.connect(self.load_option_chain_file)
         
         menubar = self.menuBar()
         fileMenu = menubar.addMenu('&File')
         fileMenu.addAction(openChainFile)
+        fileMenu.addAction(settings)
+        fileMenu.addSeparator();
         fileMenu.addAction(exitAction)
         
         # Menu - Help
@@ -107,7 +111,7 @@ class Example(QtGui.QMainWindow):
         
         self.central.setLayout(grid)
         self.setGeometry(300, 50, 800, 500)
-        self.setWindowTitle('Input dialog')
+        self.setWindowTitle('Option strategies')
         self.show()
         self.statusBar().showMessage('Ready')
     
@@ -121,11 +125,64 @@ class Example(QtGui.QMainWindow):
             at luca.mail.inbox@gmail.com", 
             buttons = QtGui.QMessageBox.Ok)
     
+    def set_settings(self):
+        '''
+        Set the values for a few specific variables
+        '''
+        self.setDial = QtGui.QDialog(self)
+        self.setDial.setWindowTitle('Settings')
+        self.setLable0   = QtGui.QLabel('Trading days in a calendar year', self.setDial)
+        self.setLable0_1 = QtGui.QLineEdit(self.setDial)
+        self.setLable0_1.setText('252')
+        self.setLable0_1.setInputMask('900')
+        
+        self.setLable1   = QtGui.QLabel('Days in history to consider\
+                            \n(for computing volatility and \
+                            \naverage stock returns)', self.setDial) #days_in_history_to_consider
+        self.setLable1_1 = QtGui.QLineEdit(self.setDial)
+        self.setLable1_1.setText('30')
+        self.setLable1_1.setInputMask('900')        
+        
+        self.setLable2   = QtGui.QLabel('Days in the future to simulate', self.setDial) #days_in_future_to_consider
+        self.setLable2_1 = QtGui.QLineEdit(self.setDial)
+        self.setLable2_1.setText('40')
+        self.setLable2_1.setInputMask('900')
+        
+        self.setLable3   = QtGui.QLabel('Number of paths to simulate', self.setDial) #num_of_paths_to_simulate
+        self.setLable3_1 = QtGui.QLineEdit(self.setDial)
+        self.setLable3_1.setText('100')
+        self.setLable3_1.setInputMask('900000')      
+        
+        btn = QtGui.QPushButton('Ok', self.setDial)
+        btn.clicked.connect(self.set_variables)  
+        
+        set_grid = QtGui.QGridLayout(self.setDial)
+        set_grid.setSpacing(10)
+        set_grid.addWidget(self.setLable0   , 1, 0)
+        set_grid.addWidget(self.setLable0_1 , 1, 1)
+        set_grid.addWidget(self.setLable1   , 2, 0)
+        set_grid.addWidget(self.setLable1_1 , 2, 1)
+        set_grid.addWidget(self.setLable2   , 3, 0)
+        set_grid.addWidget(self.setLable2_1 , 3, 1)
+        set_grid.addWidget(self.setLable3   , 4, 0)
+        set_grid.addWidget(self.setLable3_1 , 4, 1)
+        set_grid.addWidget(btn              , 5, 2)
+        
+        self.setDial.show()
+    
+    def set_variables(self):
+        mylib.trading_days_in_a_year        = int(self.setLable0_1.text())
+        mylib.days_in_history_to_consider   = int(self.setLable1_1.text())
+        mylib.days_in_future_to_consider    = int(self.setLable2_1.text())
+        mylib.num_of_paths_to_simulate      = int(self.setLable3_1.text())
+        self.setDial.close()
+    
     def get_data(self):
         '''
         Load option-chain data: if you have it on file use that, 
         otherwise download it from the web
         '''
+        print('from get_data', mylib.num_of_paths_to_simulate)
         self.statusBar().showMessage('Loading Option data.. (this might take a minute or two)')
         self.tick_str = self.le.text()
         
