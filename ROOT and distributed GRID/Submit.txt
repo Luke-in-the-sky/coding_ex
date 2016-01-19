@@ -1,0 +1,12 @@
+glite-wms-job-submit -d pietrobo -r iceage-ce-01.ct.infn.it:2119/jobmanager-lcgpbs-long rootgo_tar.jdl
+glite-wms-job-submit -d pietrobo -r grid010.ct.infn.it:2119/jobmanager-lcgpbs-infinite rootgo_tar.jdl
+glite-wms-job-submit -d pietrobo -r grid010.ct.infn.it:2119/jobmanager-lcgpbs-short rootgo_tar.jdl
+glite-wms-job-submit -d pietrobo -r vega-ce.ct.infn.it:2119/jobmanager-lcgsge-gilda rootgo_tar.jdl
+glite-wms-job-submit -d pietrobo -r gn0.hpcc.sztaki.hu:2119/jobmanager-lcgpbs-gilda rootgo_tar.jdl
+glite-wms-job-submit -d pietrobo -r dc01.nesc.ed.ac.uk:2119/jobmanager-lcgpbs-gilda rootgo_tar.jdl
+glite-wms-job-submit -d pietrobo -r dgt01.ui.savba.sk:2119/jobmanager-lcgpbs-gilda rootgo_tar.jdl
+glite-wms-job-submit -d pietrobo -r ce-edu.grid.acad.bg:2119/jobmanager-pbs-gilda rootgo_tar.jdl
+glite-wms-job-submit -d pietrobo -r grid010.ct.infn.it:2119/jobmanager-lcgpbs-long rootgo_tar.jdl
+glite-wms-job-submit -d pietrobo -r iceage-ce-01.ct.infn.it:2119/jobmanager-lcgpbs-short rootgo_tar.jdl
+
+

@@ -1,0 +1,6 @@
+Executable = "/bin/bash";
+Arguments = "rootgo_tar.sh hits_0";
+StdOutput = "stdout";
+StdError = "stderr";
+OutputSandbox = {"stdout","stderr","tracks-hits_0.root"};
+InputSandbox = {"rootgo_tar.sh","rootgo.tgz"};

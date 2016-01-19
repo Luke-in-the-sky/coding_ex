@@ -1,0 +1,28 @@
+cint/src/v6_scrupto.cxx:482: warning: unused parameter 'dictpos'
+utils/src/rootcint_tmp.o(.text+0x884): In function `R__tmpnam()':
+: warning: the use of `tmpnam' is dangerous, better use `mkstemp'
+utils/src/rootcint.o(.text+0x884): In function `R__tmpnam()':
+: warning: the use of `tmpnam' is dangerous, better use `mkstemp'
+In file included from /home/gilda057/globus-tmp.iceage-wn-14.854.0/https_3a_2f_2fgilda-lb-01.ct.infn.it_3a9000_2fP-0qiXxOzFNbBt80Z6FECQ/root/freetype/src/freetype-2.1.9/src/sfnt/sfnt.c:25:
+/home/gilda057/globus-tmp.iceage-wn-14.854.0/https_3a_2f_2fgilda-lb-01.ct.infn.it_3a9000_2fP-0qiXxOzFNbBt80Z6FECQ/root/freetype/src/freetype-2.1.9/src/sfnt/sfdriver.c: In function `sfnt_get_interface':
+/home/gilda057/globus-tmp.iceage-wn-14.854.0/https_3a_2f_2fgilda-lb-01.ct.infn.it_3a9000_2fP-0qiXxOzFNbBt80Z6FECQ/root/freetype/src/freetype-2.1.9/src/sfnt/sfdriver.c:301: warning: ISO C forbids conversion of function pointer to object pointer type
+/home/gilda057/globus-tmp.iceage-wn-14.854.0/https_3a_2f_2fgilda-lb-01.ct.infn.it_3a9000_2fP-0qiXxOzFNbBt80Z6FECQ/root/freetype/src/freetype-2.1.9/src/sfnt/sfdriver.c:304: warning: ISO C forbids conversion of function pointer to object pointer type
+postscript/src/TPostScript.cxx: In member function `virtual void TPostScript::Text(Double_t, Double_t, const char*)':
+postscript/src/TPostScript.cxx:2441: warning: unused variable 'charsHeight'
+In file included from castor/src/TCastorFile.cxx:53:
+/usr/include/shift/RfioTURL.h:68:39: stager_client_commandline.h: No such file or directory
+/usr/include/shift/RfioTURL.h:127:1: warning: "/*" within comment
+/usr/include/shift/RfioTURL.h:138:1: warning: "/*" within comment
+/usr/include/shift/RfioTURL.h:158:1: warning: "/*" within comment
+castor/src/TCastorFile.cxx: In member function `int TCastorFile::ParseAndSetGlobal()':
+castor/src/TCastorFile.cxx:290: error: `getDefaultForGlobal' was not declared in this scope
+castor/src/TCastorFile.cxx:290: warning: unused variable 'getDefaultForGlobal'
+gmake: *** [castor/src/TCastorFile.o] Error 1
+/bin/ls: bin/root: No such file or directory
+fine root
+Fitter.cc: In static member function `static Track* Fitter::findTrack(WireHit**, int)':
+Fitter.cc:44: warning: unused variable 'mtrk'
+TrkTreeWrite.cc: In member function `void TrkTreeWrite::reset()':
+TrkTreeWrite.cc:114: warning: converting to `int' from `float'
+Error in <TCint::LoadLibraryMap>: library map empty, no system.rootmap file
+found. ROOT not properly installed (run "make install").

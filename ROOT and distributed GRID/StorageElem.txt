@@ -1,0 +1,6 @@
+iceage-ce-01.ct.infn.it:2119/jobmanager-lcgpbs-long
+iceage-ce-01.ct.infn.it:2119/jobmanager-lcgpbs-infinite
+vega-ce.ct.infn.it:2119/jobmanager-lcgsge-gilda
+gilda-01.pd.infn.it:2119/jobmanager-lcgpbs-gilda
+iceage-ce-01.ct.infn.it:2119/jobmanager-lcgpbs-short
+dc01.nesc.ed.ac.uk:2119/jobmanager-lcgpbs-gilda
